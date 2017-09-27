@@ -8,7 +8,6 @@ public class MuaInterpreter {
     }
 
     public static void main(String arg[]) {
-        boolean debug = false;
         Scanner scan = new Scanner(System.in);
         while (true) {
             String PS1 = "MUA> ";
@@ -19,11 +18,12 @@ public class MuaInterpreter {
                 break;
             }
             String[] tokens = program.split(" ");
-            if (debug)
-                for (String token : tokens) {
-                    System.out.println(token);
-                }
-            if (tokens.length <= 0) {
+//            for(String s : tokens){
+//                System.out.print(s);
+//                System.out.println(s.length());
+//            }
+            if ( tokens.length <= 0 || tokens[0].length() <= 0) {
+                System.out.println("blank statement");
                 continue;
             }
             Character flag = tokens[0].charAt(0);
