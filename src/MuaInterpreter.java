@@ -18,21 +18,22 @@ public class MuaInterpreter {
                 break;
             }
             String[] tokens = program.split(" ");
-//            for(String s : tokens){
-//                System.out.print(s);
-//                System.out.println(s.length());
-//            }
-            if ( tokens.length <= 0 || tokens[0].length() <= 0) {
-                System.out.println("blank statement");
+            if (tokens.length <= 0 || tokens[0].length() <= 0) {
+                System.out.println("Blank statement.");
                 continue;
             }
-            Character flag = tokens[0].charAt(0);
-            if (Character.isDigit(flag)) {
-                System.out.print("Number: ");
-                try {
-                    System.out.println(get_value_of_num(tokens[0]));
-                }catch (java.lang.NumberFormatException e){
-                    System.out.println("Unexpected char got. Can't parse number.");
+
+            for (String token : tokens) {
+                if (token.length() <= 0) continue;
+                Character mark = token.charAt(0);
+                if (token.length() >= 2 && token.substring(0, 2).equals("//")) break;
+                if (Character.isDigit(mark) || mark == '-') {
+                    System.out.print("Number: ");
+                    try {
+                        System.out.println(get_value_of_num(token));
+                    } catch (java.lang.NumberFormatException e) {
+                        System.out.println("Unexpected char got. Can't parse number.");
+                    }
                 }
             }
         }
@@ -40,6 +41,11 @@ public class MuaInterpreter {
 
     private static float get_value_of_num(String s) {
         return Float.parseFloat(s);
+    }
+
+    private static Object getValue(String[]  tokens){
+        Integer a = 0;
+        return a;
     }
 
 }
