@@ -9,6 +9,6 @@ public class test {
 //        Scanner scan = new Scanner(System.in);
 //        System.out.println(scan.next());
 //        System.out.println(scan.nextLine());
-        System.out.println("abc".compareTo("bc"));
+        System.out.println("abc"+2);
     }
 }

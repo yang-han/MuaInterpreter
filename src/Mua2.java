@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Scanner;
 
 public class Mua2 {
@@ -50,10 +52,18 @@ class _Number extends Value {
 }
 
 class _List extends Value {
+    ArrayList<Value> value = new ArrayList<>();
 
+    public void append(Value v){
+        value.add(v);
+    }
     @Override
     public void print() {
-        System.out.println("list");
+        System.out.println("<List:");
+        for (Value v : value) {
+            v.print();
+        }
+        System.out.println(">");
     }
 }
 
@@ -82,7 +92,8 @@ interface Calculate {
 
 
 class Interpreter2 {
-    private Scanner scan = new Scanner(System.in);
+    private Scanner LineScan = new Scanner(System.in);
+    private Scanner scan;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
 
@@ -177,30 +188,74 @@ class Interpreter2 {
         return new TwoNumbers(v1, v2);
     }
 
-    private Value getValue() {
-        String op = scan.next();
+    private Value getValue(String op){
+
+        if (op.charAt(0) == '"') {
+            return new _Word().set(op.substring(1, op.length()));
+        }
+
+        if (op.charAt(0) == '['){
+            _List result = new _List();
+            op = op.substring(1, op.length());
+            while(op.charAt(op.length()-1) != ']'){
+                result.append(getValue(op));
+                op = scan.next();
+
+            }
+            result.append(getValue(op.substring(0, op.length()-1)));
+            return result;
+        }
+
+        if (op.equals("thing") || op.charAt(0) == ':') {
+            String key;
+            if(op.equals("thing")){
+                key = scan.next();
+                if (key.charAt(0) != '"'){
+                    System.out.println("Illegal word format.");
+                    return null;
+                }
+            }
+            else {
+                key = op;
+            }
+            Value v = dict.get(key.substring(1, key.length()));
+            if (v == null) {
+                System.out.println("No value bound with this word.");
+            } else {
+                return v;
+            }
+        }
         if (op.equalsIgnoreCase("true") || op.equalsIgnoreCase("false")) {
             return new _Bool().set(Boolean.parseBoolean(op));
+        }
+        if (op.equals("isname")) {
+            String key = scan.next();
+            if (key.charAt(0) != '"') {
+                System.out.println("Illegal word.");
+            } else {
+                return new _Bool().set(dict.containsKey(key.substring(1, key.length())));
+            }
         }
         try {
             return new _Number().set(Float.parseFloat(op));
         } catch (java.lang.NumberFormatException e) {
-            if (!method.containsKey(op)) {
-                if (op.charAt(0) == '"') {
-                    return new _Word().set(op.substring(1, op.length()));
-                }
+            if (method.containsKey(op)) {
+                return method.get(op).run();
             }
         }
-        if (method.containsKey(op)) {
-            return method.get(op).run();
-        }
+
         return null;
+    }
+    private Value getValue() {
+        String op = scan.next();
+        return getValue(op);
     }
 
     public void run() {
         String PS1 = "Mua> ";
         while (true) {
             System.out.print(PS1);
+            scan = new Scanner(LineScan.nextLine());
             String op = scan.next();
 
             if (op.equals("exit")) {
@@ -221,11 +276,29 @@ class Interpreter2 {
 
             }
             if (op.equals("make")) {
-                String word = scan.next();
-                if (word.charAt(0) != '"') {
-                    System.out.println("Bad input.");
+                String key = scan.next();
+                if (key.charAt(0) != '"') {
+                    System.out.println("Illegal word.");
                 } else {
-                    dict.put(word.substring(1, word.length()), getValue());
+                    dict.put(key.substring(1, key.length()), getValue());
+                }
+            }
+            if (op.equals("erase")) {
+
+                String key = scan.next();
+                if (key.charAt(0) != '"') {
+                    System.out.println("Illegal word.");
+                } else if (!dict.containsKey(key.substring(1, key.length()))) {
+                    System.out.println("No value bound with this word.");
+                } else {
+                    Iterator<String> it = dict.keySet().iterator();
+                    while (it.hasNext()) {
+                        String k = it.next();
+                        if (k.equals(key.substring(1, key.length()))) {
+                            it.remove();
+                            dict.remove(k);
+                        }
+                    }
                 }
             }
 
