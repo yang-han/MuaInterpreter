@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Scanner;
+import java.util.*;
 
 public class MuaInterpreter {
     public static void main(String[] args) {
@@ -10,16 +7,19 @@ public class MuaInterpreter {
     }
 }
 
+class MuaTypeException extends RuntimeException {
+
+}
 
 abstract class Value {
 
     abstract public void print();
 
-    abstract public String getString();
+    abstract public String getString() throws MuaTypeException;
 
-    abstract public Float getFloat();
+    abstract public Float getFloat() throws MuaTypeException;
 
-    abstract public Boolean getBoolean();
+    abstract public Boolean getBoolean() throws MuaTypeException;
 }
 
 class _Word extends Value {
@@ -34,12 +34,12 @@ class _Word extends Value {
         return value;
     }
 
-    public Float getFloat() {
-        return null;
+    public Float getFloat() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
-    public Boolean getBoolean() {
-        return null;
+    public Boolean getBoolean() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
     @Override
@@ -56,16 +56,16 @@ class _Number extends Value {
         return this;
     }
 
-    public String getString() {
-        return null;
+    public String getString() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
     public Float getFloat() {
         return value;
     }
 
-    public Boolean getBoolean() {
-        return null;
+    public Boolean getBoolean() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
 
@@ -82,16 +82,17 @@ class _List extends Value {
         value.add(v);
     }
 
-    public String getString() {
-        return null;
+    public String getString() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
-    public Float getFloat() {
-        return null;
+    public Float getFloat() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
-    public Boolean getBoolean() {
-        return null;
+    public Boolean getBoolean() throws MuaTypeException {
+        throw new MuaTypeException();
+
     }
 
     @Override
@@ -112,12 +113,12 @@ class _Bool extends Value {
         return this;
     }
 
-    public String getString() {
-        return null;
+    public String getString() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
-    public Float getFloat() {
-        return null;
+    public Float getFloat() throws MuaTypeException {
+        throw new MuaTypeException();
     }
 
     public Boolean getBoolean() {
@@ -141,8 +142,10 @@ class Interpreter {
     private Scanner scan;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
+    private ArrayList operation = new ArrayList<String>(){{add("make"); add("print"); add("erase"); add("make");}};
 
     public Interpreter() {
+
 
         method.put("add", new Calculate() {
             @Override
@@ -265,35 +268,71 @@ class Interpreter {
             return new _Word().set(op.substring(1, op.length()));
         }
 
-        if (op.charAt(0) == '[') {
+        if (op.equals("[")) {
             _List result = new _List();
-            op = op.substring(1, op.length());
-            while (op.charAt(op.length() - 1) != ']') {
-                result.append(getValue(op));
-                op = scan.next();
-
+            int cnt = 1;
+            while (true){
+                String str = scan.next();
+                Value v;
+                if(str.equals("[")){
+                    v = getValue(str);
+                    cnt ++;
+                }
+                else if (str.equals("]")){
+                    return result;
+                }
+                else{
+                    try {
+                        v = new _Number().set(Float.parseFloat(str));
+                    }
+                    catch (java.lang.NumberFormatException e){
+                        if (str.charAt(0) == '"'){
+                            v = new _Word().set(str.substring(1, str.length()));
+                        }
+                        else if (method.containsKey(str) || operation.contains(str)){
+                            v = new _Word().set(str);
+                        }
+                        else{
+                            throw new MuaTypeException();
+                        }
+                    }
+                }
+                result.append(v);
             }
-
-            result.append(getValue(op.substring(0, op.length() - 1)));
-            return result;
         }
 
         if (op.equals("read")){
-            return getValue();
+            System.out.print("> ");
+            Scanner temp_scan = scan;
+            scan = new Scanner(System.in);
+            Value result = getValue();
+            scan = temp_scan;
+            return result;
+        }
+
+        if (op.equals("readlinst")){
+            System.out.print("> ");
+            Scanner temp_scan = scan;
+
+            String line = LineScan.nextLine();
+            scan = new Scanner(line.replace("[", " [ ").replace("]", " ] "));
+            _List list = new _List();
+            while(scan.hasNext()){
+                list.append(getValue());
+            }
+            scan = temp_scan;
+            return list;
         }
 
         if (op.equals("thing") || op.charAt(0) == ':') {
             String key;
             if (op.equals("thing")) {
-                key = scan.next();
-                if (key.charAt(0) != '"') {
-                    System.out.println("Illegal word format.");
-                    return null;
-                }
-            } else {
-                key = op;
+                key = getValue().getString();
             }
-            Value v = dict.get(key.substring(1, key.length()));
+            else {
+                key = op.substring(1, op.length());
+            }
+            Value v = dict.get(key);
             if (v == null) {
                 System.out.println("No value bound with this word.");
             } else {
@@ -334,7 +373,10 @@ class Interpreter {
         String PS1 = "Mua> ";
         while (true) {
             System.out.print(PS1);
-            scan = new Scanner(LineScan.nextLine());
+            scan = new Scanner(LineScan.nextLine().replace("[", " [ ").replace("]", " ] "));
+            if(!scan.hasNext()){
+                continue;
+            }
             String op = scan.next();
 
             if (op.equals("exit")) {
@@ -351,6 +393,8 @@ class Interpreter {
                     v = getValue();
                 } catch (java.util.NoSuchElementException e) {
                     System.out.println("Incomplete input. Please check.");
+                } catch (MuaTypeException e){
+                    System.out.println("TypeError. Please check.");
                 }
                 if (v == null) {
                     System.out.println("Parse failed. Please check syntax.");
