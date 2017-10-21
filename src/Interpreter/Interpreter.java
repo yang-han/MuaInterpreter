@@ -10,9 +10,10 @@ class MuaTypeException extends RuntimeException {
 
 }
 
-abstract class Value {
+abstract class Value extends Object {
 
-    abstract public void print();
+    @Override
+    abstract public String toString();
 
     abstract public String getString() throws MuaTypeException;
 
@@ -42,8 +43,8 @@ class _Word extends Value {
     }
 
     @Override
-    public void print() {
-        System.out.println(value);
+    public String toString() {
+        return String.valueOf(value);
     }
 }
 
@@ -69,8 +70,8 @@ class _Number extends Value {
 
 
     @Override
-    public void print() {
-        System.out.println(value);
+    public String toString() {
+        return String.valueOf(value);
     }
 }
 
@@ -95,12 +96,8 @@ class _List extends Value {
     }
 
     @Override
-    public void print() {
-        System.out.println("<List:");
-        for (Value v : value) {
-            v.print();
-        }
-        System.out.println(">");
+    public String toString() {
+        return String.valueOf(value);
     }
 }
 
@@ -125,10 +122,9 @@ class _Bool extends Value {
     }
 
     @Override
-    public void print() {
-        System.out.println(value);
+    public String toString() {
+        return String.valueOf(value);
     }
-
 }
 
 interface Calculate {
@@ -379,6 +375,12 @@ public class Interpreter {
     }
 
     public void run() {
+        String Prompt = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" +
+                        "> Welcome to MuaInterpreter By yh !\n" +
+                        "> If you need the Interative mode,\n" +
+                        "> plz use commandline args '-i' or '--interactive'\n" +
+                        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
+        System.out.println(Prompt);
         while (true) {
             System.out.print(PS1);
             if(LineScan.hasNext()) {
@@ -412,7 +414,7 @@ public class Interpreter {
                 if (v == null) {
                     System.out.println("Parse failed. Please check syntax.");
                 } else {
-                    v.print();
+                    System.out.println(v);
                 }
 
             }
