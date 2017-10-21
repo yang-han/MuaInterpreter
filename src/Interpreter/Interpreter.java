@@ -143,8 +143,18 @@ public class Interpreter {
     private HashMap<String, Calculate> method = new HashMap<>();
     private ArrayList operation = new ArrayList<String>(){{add("make"); add("print"); add("erase"); add("make");}};
 
-    public Interpreter() {
+    private String PS1 = "Mua> ";
+    private String PS2 = "> ";
 
+    public Interpreter(Boolean Interactive) {
+        if(!Interactive){
+            PS1 = "";
+            PS2 = "";
+        }
+        else {
+            PS1 = "Mua> ";
+            PS2 = "> ";
+        }
 
         method.put("add", new Calculate() {
             @Override
@@ -301,7 +311,7 @@ public class Interpreter {
         }
 
         if (op.equals("read")){
-            System.out.print("> ");
+            System.out.print(PS2);
             Scanner temp_scan = scan;
             scan = new Scanner(System.in);
             Value result = getValue();
@@ -310,7 +320,7 @@ public class Interpreter {
         }
 
         if (op.equals("readlinst")){
-            System.out.print("> ");
+            System.out.print(PS2);
             Scanner temp_scan = scan;
 
             String line = LineScan.nextLine();
@@ -369,10 +379,14 @@ public class Interpreter {
     }
 
     public void run() {
-        String PS1 = "Mua> ";
         while (true) {
             System.out.print(PS1);
-            scan = new Scanner(LineScan.nextLine().replace("[", " [ ").replace("]", " ] "));
+            if(LineScan.hasNext()) {
+                scan = new Scanner(LineScan.nextLine().replace("[", " [ ").replace("]", " ] "));
+            }
+            else {
+                break;
+            }
             if(!scan.hasNext()){
                 continue;
             }
