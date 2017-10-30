@@ -10,7 +10,7 @@ class MuaTypeException extends RuntimeException {
 
 }
 
-abstract class Value extends Object {
+abstract class Value {
 
     @Override
     abstract public String toString();
@@ -137,17 +137,21 @@ public class Interpreter {
     private Scanner scan;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
-    private ArrayList operation = new ArrayList<String>(){{add("make"); add("print"); add("erase"); add("make");}};
+    private ArrayList operation = new ArrayList<String>() {{
+        add("make");
+        add("print");
+        add("erase");
+        add("make");
+    }};
 
     private String PS1 = "Mua> ";
     private String PS2 = "> ";
 
     public Interpreter(Boolean Interactive) {
-        if(!Interactive){
+        if (!Interactive) {
             PS1 = "";
             PS2 = "";
-        }
-        else {
+        } else {
             PS1 = "Mua> ";
             PS2 = "> ";
         }
@@ -276,28 +280,23 @@ public class Interpreter {
         if (op.equals("[")) {
             _List result = new _List();
             int cnt = 1;
-            while (true){
+            while (true) {
                 String str = scan.next();
                 Value v;
-                if(str.equals("[")){
+                if (str.equals("[")) {
                     v = getValue(str);
-                    cnt ++;
-                }
-                else if (str.equals("]")){
+                    cnt++;
+                } else if (str.equals("]")) {
                     return result;
-                }
-                else{
+                } else {
                     try {
                         v = new _Number().set(Float.parseFloat(str));
-                    }
-                    catch (java.lang.NumberFormatException e){
-                        if (str.charAt(0) == '"'){
+                    } catch (java.lang.NumberFormatException e) {
+                        if (str.charAt(0) == '"') {
                             v = new _Word().set(str.substring(1, str.length()));
-                        }
-                        else if (method.containsKey(str) || operation.contains(str)){
+                        } else if (method.containsKey(str) || operation.contains(str)) {
                             v = new _Word().set(str);
-                        }
-                        else{
+                        } else {
                             throw new MuaTypeException();
                         }
                     }
@@ -306,7 +305,7 @@ public class Interpreter {
             }
         }
 
-        if (op.equals("read")){
+        if (op.equals("read")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
             scan = new Scanner(System.in);
@@ -315,14 +314,14 @@ public class Interpreter {
             return result;
         }
 
-        if (op.equals("readlinst")){
+        if (op.equals("readlinst")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
 
             String line = LineScan.nextLine();
             scan = new Scanner(line.replace("[", " [ ").replace("]", " ] "));
             _List list = new _List();
-            while(scan.hasNext()){
+            while (scan.hasNext()) {
                 list.append(getValue());
             }
             scan = temp_scan;
@@ -333,8 +332,7 @@ public class Interpreter {
             String key;
             if (op.equals("thing")) {
                 key = getValue().getString();
-            }
-            else {
+            } else {
                 key = op.substring(1, op.length());
             }
             Value v = dict.get(key);
@@ -376,20 +374,19 @@ public class Interpreter {
 
     public void run() {
         String Prompt = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" +
-                        "> Welcome to MuaInterpreter By yh !\n" +
-                        "> If you need the Interative mode,\n" +
-                        "> plz use commandline args '-i' or '--interactive'\n" +
-                        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
+                "> Welcome to MuaInterpreter By yh !\n" +
+                "> If you need the Interative mode,\n" +
+                "> plz use commandline args '-i' or '--interactive'\n" +
+                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
         System.out.println(Prompt);
         while (true) {
             System.out.print(PS1);
-            if(LineScan.hasNext()) {
+            if (LineScan.hasNext()) {
                 scan = new Scanner(LineScan.nextLine().replace("[", " [ ").replace("]", " ] "));
-            }
-            else {
+            } else {
                 break;
             }
-            if(!scan.hasNext()){
+            if (!scan.hasNext()) {
                 continue;
             }
             String op = scan.next();
@@ -408,7 +405,7 @@ public class Interpreter {
                     v = getValue();
                 } catch (java.util.NoSuchElementException e) {
                     System.out.println("Incomplete input. Please check.");
-                } catch (MuaTypeException e){
+                } catch (MuaTypeException e) {
                     System.out.println("TypeError. Please check.");
                 }
                 if (v == null) {
