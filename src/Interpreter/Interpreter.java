@@ -141,7 +141,6 @@ public class Interpreter {
         add("make");
         add("print");
         add("erase");
-        add("make");
     }};
 
     private String PS1 = "Mua> ";

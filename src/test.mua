@@ -1,20 +1,10 @@
 make "a readlinst
 "a "b ["a ["b [123]]]
+
 print :a
 // Output Here:
-// <List:
-// a
-// b
-// <List:
-// a
-// <List:
-// b
-// <List:
-// 123.0
-// >
-// >
-// >
-// >
+// [12.0, [12.0], [32.0], add, 1.0, 2.0]
+
 
 make "b [12 [12] [32] add 1 2]
 print thing "b
