@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Scanner;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptEngine;
 
 class MuaTypeException extends RuntimeException {
 
@@ -44,7 +46,7 @@ class _Word extends Value {
 
     @Override
     public String toString() {
-        return String.valueOf(value);
+        return String.valueOf(value.substring(1,value.length()));
     }
 }
 
@@ -137,6 +139,8 @@ public class Interpreter {
     private Scanner scan;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
+    private ScriptEngineManager manager = new ScriptEngineManager();
+    private ScriptEngine engine = manager.getEngineByName("javascript");
     private ArrayList operation = new ArrayList<String>() {{
         add("make");
         add("print");
@@ -273,7 +277,7 @@ public class Interpreter {
     private Value getValue(String op) {
 
         if (op.charAt(0) == '"') {
-            return new _Word().set(op.substring(1, op.length()));
+            return new _Word().set(op);
         }
 
         if (op.equals("[")) {
@@ -289,8 +293,8 @@ public class Interpreter {
                     return result;
                 } else {
                     try {
-                        v = new _Number().set(Float.parseFloat(str));
-                    } catch (java.lang.NumberFormatException e) {
+                        v = new _Number().set(Float.valueOf(engine.eval(str.replace("-", " - ")).toString()));
+                    } catch (Exception e) {
                         if (str.charAt(0) == '"') {
                             v = new _Word().set(str.substring(1, str.length()));
                         } else if (method.containsKey(str) || operation.contains(str)) {
@@ -332,7 +336,7 @@ public class Interpreter {
             if (op.equals("thing")) {
                 key = getValue().getString();
             } else {
-                key = op.substring(1, op.length());
+                key = "\"" + op.substring(1, op.length());
             }
             Value v = dict.get(key);
             if (v == null) {
@@ -356,8 +360,9 @@ public class Interpreter {
         }
 
         try {
-            return new _Number().set(Float.parseFloat(op));
-        } catch (java.lang.NumberFormatException e) {
+            return new _Number().set(Float.valueOf(engine.eval(op.replace("-", " -")).toString()));
+        } catch (Exception e) {
+            e.printStackTrace();
             if (method.containsKey(op)) {
                 return method.get(op).run();
             }
@@ -372,31 +377,38 @@ public class Interpreter {
     }
 
     public void run() {
-        String Prompt = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" +
-                "> Welcome to MuaInterpreter By yh !\n" +
-                "> If you need the Interative mode,\n" +
-                "> plz use commandline args '-i' or '--interactive'\n" +
-                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
-        System.out.println(Prompt);
+//        String Prompt = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" +
+//                "> Welcome to MuaInterpreter By yh !\n" +
+//                "> If you need the Interative mode,\n" +
+//                "> plz use commandline args '-i' or '--interactive'\n" +
+//                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
+//        System.out.println(Prompt);
+
         while (true) {
+
             System.out.print(PS1);
-            if (LineScan.hasNext()) {
-                scan = new Scanner(LineScan.nextLine().replace("[", " [ ").replace("]", " ] "));
-            } else {
-                break;
+            String statement = LineScan.nextLine();
+            System.out.println("input: " + statement);
+            if(!run_statement(statement)){
+                return;
             }
-            if (!scan.hasNext()) {
-                continue;
-            }
+        }
+    }
+
+    private boolean run_statement(String statement){
+        if(statement.isEmpty()){return true;}
+        scan = new Scanner(statement.replace("[", " [ ").replace("]", " ] "));
+        while(scan.hasNext()){
+
             String op = scan.next();
 
             if (op.equals("exit")) {
                 System.out.println("Bye~");
-                break;
+                return false;
             }
             if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
                 scan.nextLine();
-                continue;
+                return false;
             }
             if (op.equals("print")) {
                 Value v = null;
@@ -419,7 +431,7 @@ public class Interpreter {
                 if (key.charAt(0) != '"') {
                     System.out.println("Illegal word.");
                 } else {
-                    dict.put(key.substring(1, key.length()), getValue());
+                    dict.put(key, getValue());
                 }
             }
             if (op.equals("erase")) {
@@ -427,20 +439,21 @@ public class Interpreter {
                 String key = scan.next();
                 if (key.charAt(0) != '"') {
                     System.out.println("Illegal word.");
-                } else if (!dict.containsKey(key.substring(1, key.length()))) {
+                } else if (!dict.containsKey(key)) {
                     System.out.println("No value bound with this word.");
                 } else {
                     Iterator<String> it = dict.keySet().iterator();
                     while (it.hasNext()) {
                         String k = it.next();
-                        if (k.equals(key.substring(1, key.length()))) {
+                        if (k.equals(key)) {
                             it.remove();
                             dict.remove(k);
                         }
                     }
                 }
             }
-
         }
+        return true;
     }
+
 }
