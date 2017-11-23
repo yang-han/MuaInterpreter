@@ -46,8 +46,9 @@ class _Word extends Value {
 
     @Override
     public String toString() {
-        return String.valueOf(value.substring(1,value.length()));
+        return String.valueOf(value);
     }
+
 }
 
 class _Number extends Value {
@@ -78,7 +79,7 @@ class _Number extends Value {
 }
 
 class _List extends Value {
-    ArrayList<Value> value = new ArrayList<>();
+    public ArrayList<Value> value = new ArrayList<>();
 
     public void append(Value v) {
         value.add(v);
@@ -99,8 +100,14 @@ class _List extends Value {
 
     @Override
     public String toString() {
-        return String.valueOf(value);
+        StringBuilder result = new StringBuilder("[ ");
+        for (Value v : value) {
+            result.append(v.toString()).append(" ");
+        }
+        result.append(" ]");
+        return result.toString();
     }
+
 }
 
 class _Bool extends Value {
@@ -127,6 +134,7 @@ class _Bool extends Value {
     public String toString() {
         return String.valueOf(value);
     }
+
 }
 
 interface Calculate {
@@ -137,6 +145,7 @@ interface Calculate {
 public class Interpreter {
     private Scanner LineScan = new Scanner(System.in);
     private Scanner scan;
+    private Value return_val = null;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
     private ScriptEngineManager manager = new ScriptEngineManager();
@@ -145,6 +154,8 @@ public class Interpreter {
         add("make");
         add("print");
         add("erase");
+        add("run");
+        add("repeat");
     }};
 
     private String PS1 = "Mua> ";
@@ -276,39 +287,28 @@ public class Interpreter {
 
     private Value getValue(String op) {
 
+//        System.out.println("- - " +op);
         if (op.charAt(0) == '"') {
             return new _Word().set(op);
         }
 
-        if (op.equals("[")) {
+        else if (op.equals("[")) {
             _List result = new _List();
-            int cnt = 1;
             while (true) {
                 String str = scan.next();
                 Value v;
                 if (str.equals("[")) {
                     v = getValue(str);
-                    cnt++;
                 } else if (str.equals("]")) {
                     return result;
-                } else {
-                    try {
-                        v = new _Number().set(Float.valueOf(engine.eval(str.replace("-", " - ")).toString()));
-                    } catch (Exception e) {
-                        if (str.charAt(0) == '"') {
-                            v = new _Word().set(str.substring(1, str.length()));
-                        } else if (method.containsKey(str) || operation.contains(str)) {
-                            v = new _Word().set(str);
-                        } else {
-                            throw new MuaTypeException();
-                        }
-                    }
+                } else{
+                    v = new _Word().set(str);
                 }
                 result.append(v);
             }
         }
 
-        if (op.equals("read")) {
+        else if (op.equals("read")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
             scan = new Scanner(System.in);
@@ -317,7 +317,7 @@ public class Interpreter {
             return result;
         }
 
-        if (op.equals("readlinst")) {
+        else if (op.equals("readlinst")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
 
@@ -331,26 +331,29 @@ public class Interpreter {
             return list;
         }
 
-        if (op.equals("thing") || op.charAt(0) == ':') {
+        else if (op.equals("thing") || op.charAt(0) == ':') {
             String key;
             if (op.equals("thing")) {
                 key = getValue().getString();
             } else {
                 key = "\"" + op.substring(1, op.length());
             }
+
+//            System.out.println("now: ");
+//            System.out.println(dict);
             Value v = dict.get(key);
             if (v == null) {
-                System.out.println("No value bound with this word.");
+                System.out.println("No value bound with this word: "+key);
             } else {
                 return v;
             }
         }
 
-        if (op.equalsIgnoreCase("true") || op.equalsIgnoreCase("false")) {
+        else if (op.equalsIgnoreCase("true") || op.equalsIgnoreCase("false")) {
             return new _Bool().set(Boolean.parseBoolean(op));
         }
 
-        if (op.equals("isname")) {
+        else if (op.equals("isname")) {
             String key = scan.next();
             if (key.charAt(0) != '"') {
                 System.out.println("Illegal word.");
@@ -358,13 +361,23 @@ public class Interpreter {
                 return new _Bool().set(dict.containsKey(key.substring(1, key.length())));
             }
         }
-
-        try {
-            return new _Number().set(Float.valueOf(engine.eval(op.replace("-", " -")).toString()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (method.containsKey(op)) {
-                return method.get(op).run();
+//        else if(op.equals("output")){
+//            return_val = getValue();
+//            System.out.println("getvalue: ");
+//            System.out.println(return_val);
+//        }
+        else if(dict.containsKey("\""+op)){
+//            System.out.println("here~~~~");
+            return callFunc("\""+op);
+        }
+        else if (method.containsKey(op)) {
+            return method.get(op).run();
+        }
+        else {
+            try {
+                return new _Number().set(Float.valueOf(engine.eval(op.replace("-", " -")).toString()));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
@@ -376,6 +389,46 @@ public class Interpreter {
         return getValue(op);
     }
 
+
+    private Value callFunc(String op){
+        Value return_val_backup = return_val;
+        return_val = null;
+        String func_list = dict.get(op).toString();
+        func_list = func_list.substring(1, func_list.length()-1);
+//        System.out.println(func_list);
+
+        Scanner scan_backup = scan;
+        scan = new Scanner(func_list);
+        Value arg_list = getValue();
+        Value operation_list = getValue();
+        scan = scan_backup;
+
+        HashMap<String, Value> dict_backup = dict;
+        dict = new HashMap<>();
+
+        String arg_string = arg_list.toString();
+        Scanner arg_scan = new Scanner(arg_string.substring(1, arg_string.length()-1));
+        while(arg_scan.hasNext()){
+            String arg = arg_scan.next();
+            Value val = getValue();
+//            System.out.println("arg:");
+//            System.out.println(arg);
+//            System.out.println(val);
+            dict.put(arg, val);
+        }
+        runStatement(operation_list.toString());
+//        System.out.println("--------------=");
+        dict = dict_backup;
+        Value result = return_val;
+//        System.out.print("return: ");
+//        System.out.println(result);
+//        System.out.println(return_val);
+        return_val = return_val_backup;
+
+        return result;
+    }
+
+
     public void run() {
 //        String Prompt = ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n" +
 //                "> Welcome to MuaInterpreter By yh !\n" +
@@ -385,25 +438,29 @@ public class Interpreter {
 //        System.out.println(Prompt);
 
         while (true) {
-
             System.out.print(PS1);
             String statement = LineScan.nextLine();
-            System.out.println("input: " + statement);
-            if(!run_statement(statement)){
-                return;
-            }
+//            System.out.println("input: " + statement);
+            if(!runStatement(statement)) return ;
         }
     }
 
-    private boolean run_statement(String statement){
+    private boolean runStatement(String statement){
         if(statement.isEmpty()){return true;}
         scan = new Scanner(statement.replace("[", " [ ").replace("]", " ] "));
+//        System.out.println(statement.replace("[", " [ ").replace("]", " ] "));
+//        System.out.println(dict);
         while(scan.hasNext()){
 
             String op = scan.next();
 
-            if (op.equals("exit")) {
-                System.out.println("Bye~");
+//            if(op.equals("output")){
+//
+//            }
+
+            if (op.equals("exit") || op.equals("stop")) {
+//                System.out.println("Bye~");
+                scan.nextLine();
                 return false;
             }
             if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
@@ -452,8 +509,27 @@ public class Interpreter {
                     }
                 }
             }
+            if (op.equals("run")){
+                return runStatement(getValue().toString());
+            }
+            else if(op.equals("output")){
+                return_val = getValue();
+//                System.out.println("getvalue: ");
+//                System.out.println(return_val);
+            }
+            if (op.equals("repeat")){
+                int times = getValue().getFloat().intValue();
+                Value stmt = getValue();
+                for (int i = 0; i < times; i++) {
+                    runStatement(stmt.toString());
+                }
+            }
+            if(dict.containsKey("\""+op)){
+                callFunc("\""+op);
+            }
         }
         return true;
     }
 
 }
+
