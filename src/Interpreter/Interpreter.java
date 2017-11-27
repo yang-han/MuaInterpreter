@@ -145,6 +145,7 @@ interface Calculate {
 public class Interpreter {
     private Scanner LineScan = new Scanner(System.in);
     private Scanner scan;
+    private Calculator calculator = new Calculator();
     private Value return_val = null;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
@@ -375,7 +376,7 @@ public class Interpreter {
         }
         else {
             try {
-                return new _Number().set(Float.valueOf(engine.eval(op.replace("-", " -")).toString()));
+                return new _Number().set(calculator.cal(op));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -437,11 +438,11 @@ public class Interpreter {
 //                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
 //        System.out.println(Prompt);
 
-        while (true) {
+        while (LineScan.hasNext()) {
             System.out.print(PS1);
             String statement = LineScan.nextLine();
 //            System.out.println("input: " + statement);
-            if(!runStatement(statement)) return ;
+            if(!runStatement(statement)) break ;
         }
     }
 
@@ -454,18 +455,18 @@ public class Interpreter {
 
             String op = scan.next();
 
-//            if(op.equals("output")){
-//
-//            }
-
-            if (op.equals("exit") || op.equals("stop")) {
+            if (op.equals("exit")) {
+                System.out.println("Bye~");
+                return false;
+            }
+            if (op.equals("stop")) {
 //                System.out.println("Bye~");
                 scan.nextLine();
-                return false;
+                return true;
             }
             if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
                 scan.nextLine();
-                return false;
+                return true;
             }
             if (op.equals("print")) {
                 Value v = null;
