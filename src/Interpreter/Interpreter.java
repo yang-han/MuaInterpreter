@@ -422,6 +422,7 @@ public class Interpreter {
             }
             String real_expr = real_expr_builder.toString();
 //            System.out.println(real_expr);
+            scan = scan_backup;
             try {
                 return new _Number().set(calculator.cal(real_expr));
             } catch (Exception e) {
