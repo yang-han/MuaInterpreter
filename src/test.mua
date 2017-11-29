@@ -36,3 +36,6 @@ make "q ff 1 2
 // 1.0
 print :q
 // 3.0
+
+make "x 98
+print (thing "x + 10 *(1-:x))

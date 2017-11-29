@@ -1,10 +1,7 @@
 package Interpreter;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Scanner;
+import java.util.*;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptEngine;
 
@@ -158,6 +155,7 @@ public class Interpreter {
         add("run");
         add("repeat");
     }};
+    HashSet<String> cal_op = new HashSet<>();
 
     private String PS1 = "Mua> ";
     private String PS2 = "> ";
@@ -170,6 +168,12 @@ public class Interpreter {
             PS1 = "Mua> ";
             PS2 = "> ";
         }
+
+        cal_op.add("+");
+        cal_op.add("-");
+        cal_op.add("*");
+        cal_op.add("/");
+        cal_op.add("%");
 
         method.put("add", new Calculate() {
             @Override
@@ -374,10 +378,60 @@ public class Interpreter {
         else if (method.containsKey(op)) {
             return method.get(op).run();
         }
-        else {
+        else if(cal_op.contains(op)){
+            return new _Word().set(op);
+        }
+        else if(op.equals("(")){
+            int count = 1;
+            StringBuilder expr = new StringBuilder();
+            String now;
+            while(scan.hasNext()){
+                now = scan.next();
+                if(now.equals("(")){
+                    count ++;
+                }
+                else if(now.equals(")")){
+                    count --;
+                }
+                if(count == 0){
+                    break;
+                }
+                expr.append(now);
+                expr.append(" ");
+            }
+
+            String expression = expr.toString().replace("(", " ( ").replace(")", " ) ");
+            expression = expression.replace("+", " + ").replace("-", " - ");
+            expression = expression.replace("*", " * ").replace("/", " / ");
+            expression = expression.replace("%", " % ");
+            expression = expression.replaceAll("\\+(\\s+)-\\s+", "+ -");
+            expression = expression.replaceAll("-(\\s+)-\\s+", "- -");
+            expression = expression.replaceAll("\\*(\\s+)-\\s+", "* -");
+            expression = expression.replaceAll("/(\\s+)-\\s+", "/ -");
+            expression = expression.replaceAll("%(\\s+)-\\s+", "% -");
+            expression = expression.replaceAll("\\((\\s+)-\\s+", "( -");
+            expression = expression.replaceAll("\b(\\s+)-\\s+", "-");
+            Scanner scan_backup = scan;
+            scan = new Scanner(expression);
+//            System.out.println(expression);
+            StringBuilder real_expr_builder = new StringBuilder();
+            while(scan.hasNext()){
+                String n = getValue().toString();
+//                System.out.println(n);
+                real_expr_builder.append(n);
+            }
+            String real_expr = real_expr_builder.toString();
+//            System.out.println(real_expr);
             try {
-                return new _Number().set(calculator.cal(op));
+                return new _Number().set(calculator.cal(real_expr));
             } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else{
+            try{
+                return new _Number().set(Float.parseFloat(op));
+            }catch (Exception e){
                 e.printStackTrace();
             }
         }
@@ -448,7 +502,9 @@ public class Interpreter {
 
     private boolean runStatement(String statement){
         if(statement.isEmpty()){return true;}
-        scan = new Scanner(statement.replace("[", " [ ").replace("]", " ] "));
+        statement = statement.replace("[", " [ ").replace("]", " ] ");
+        statement = statement.replace("(", " ( ").replace(")", " ) ");
+        scan = new Scanner(statement);
 //        System.out.println(statement.replace("[", " [ ").replace("]", " ] "));
 //        System.out.println(dict);
         while(scan.hasNext()){
@@ -527,6 +583,10 @@ public class Interpreter {
             }
             if(dict.containsKey("\""+op)){
                 callFunc("\""+op);
+            }
+            if(op.equals("printdict")){
+
+                System.out.println(dict.toString());
             }
         }
         return true;
