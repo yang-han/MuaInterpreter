@@ -22,7 +22,7 @@ print lt "abc "b
 
 
 
-print 1-(2*3-4*5)--3-3
+print (1-(2*3-4*5)--3-3)
 // 15.0
 
 make "f [["x "y] [make "z add thing "x :y print sub :z thing "y]]
@@ -39,3 +39,10 @@ print :q
 
 make "x 98
 print (thing "x + 10 *(1-:x))
+
+print random 2*2
+
+print isbool islist [make "asdas 12]
+
+print isempty "
+print isempty []

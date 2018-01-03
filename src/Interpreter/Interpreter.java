@@ -2,8 +2,8 @@ package Interpreter;
 
 
 import java.util.*;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptEngine;
+
+import static java.lang.Thread.sleep;
 
 class MuaTypeException extends RuntimeException {
 
@@ -146,8 +146,9 @@ public class Interpreter {
     private Value return_val = null;
     private HashMap<String, Value> dict = new HashMap<>();
     private HashMap<String, Calculate> method = new HashMap<>();
-    private ScriptEngineManager manager = new ScriptEngineManager();
-    private ScriptEngine engine = manager.getEngineByName("javascript");
+    Random random = new Random(0);
+    //    private ScriptEngineManager manager = new ScriptEngineManager();
+//    private ScriptEngine engine = manager.getEngineByName("javascript");
     private ArrayList operation = new ArrayList<String>() {{
         add("make");
         add("print");
@@ -290,14 +291,20 @@ public class Interpreter {
 
     }
 
+    private HashMap<String, Value> prepareDict() {
+        HashMap<String, Value> _dict = new HashMap<>();
+        _Number pi = new _Number();
+        pi.set((float) 3.14159);
+        _dict.put("\"pi", pi);
+        return _dict;
+    }
+
     private Value getValue(String op) {
 
 //        System.out.println("- - " +op);
         if (op.charAt(0) == '"') {
             return new _Word().set(op);
-        }
-
-        else if (op.equals("[")) {
+        } else if (op.equals("[")) {
             _List result = new _List();
             while (true) {
                 String str = scan.next();
@@ -306,23 +313,19 @@ public class Interpreter {
                     v = getValue(str);
                 } else if (str.equals("]")) {
                     return result;
-                } else{
+                } else {
                     v = new _Word().set(str);
                 }
                 result.append(v);
             }
-        }
-
-        else if (op.equals("read")) {
+        } else if (op.equals("read")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
             scan = new Scanner(System.in);
             Value result = getValue();
             scan = temp_scan;
             return result;
-        }
-
-        else if (op.equals("readlinst")) {
+        } else if (op.equals("readlinst")) {
             System.out.print(PS2);
             Scanner temp_scan = scan;
 
@@ -334,9 +337,7 @@ public class Interpreter {
             }
             scan = temp_scan;
             return list;
-        }
-
-        else if (op.equals("thing") || op.charAt(0) == ':') {
+        } else if (op.equals("thing") || op.charAt(0) == ':') {
             String key;
             if (op.equals("thing")) {
                 key = getValue().getString();
@@ -348,17 +349,13 @@ public class Interpreter {
 //            System.out.println(dict);
             Value v = dict.get(key);
             if (v == null) {
-                System.out.println("No value bound with this word: "+key);
+                System.out.println("No value bound with this word: " + key);
             } else {
                 return v;
             }
-        }
-
-        else if (op.equalsIgnoreCase("true") || op.equalsIgnoreCase("false")) {
+        } else if (op.equalsIgnoreCase("true") || op.equalsIgnoreCase("false")) {
             return new _Bool().set(Boolean.parseBoolean(op));
-        }
-
-        else if (op.equals("isname")) {
+        } else if (op.equals("isname")) {
             String key = scan.next();
             if (key.charAt(0) != '"') {
                 System.out.println("Illegal word.");
@@ -371,29 +368,69 @@ public class Interpreter {
 //            System.out.println("getvalue: ");
 //            System.out.println(return_val);
 //        }
-        else if(dict.containsKey("\""+op)){
+        else if (dict.containsKey("\"" + op)) {
 //            System.out.println("here~~~~");
-            return callFunc("\""+op);
-        }
-        else if (method.containsKey(op)) {
+            return callFunc("\"" + op);
+        } else if (method.containsKey(op)) {
             return method.get(op).run();
-        }
-        else if(cal_op.contains(op)){
+        } else if (cal_op.contains(op)) {
             return new _Word().set(op);
-        }
-        else if(op.equals("(")){
+        } else if (op.equals("random")) {
+            int times = getValue().getFloat().intValue();
+            _Number result = new _Number();
+            result.set(random.nextInt(times));
+
+        } else if (op.equals("sqrt")) {
+            float num = getValue().getFloat();
+            _Number result = new _Number();
+            result.set((float) Math.sqrt(num));
+            return result;
+        } else if (op.equals("isnumber")) {
+            Value _v = getValue();
+            _Bool result = new _Bool();
+            result.set(_v instanceof _Number);
+            return result;
+        } else if (op.equals("isword")) {
+            Value _v = getValue();
+            _Bool result = new _Bool();
+            result.set(_v instanceof _Word);
+            return result;
+        } else if (op.equals("islist")) {
+            Value _v = getValue();
+            _Bool result = new _Bool();
+            result.set(_v instanceof _List);
+            return result;
+        } else if (op.equals("isbool")) {
+            Value _v = getValue();
+            _Bool result = new _Bool();
+            result.set(_v instanceof _Bool);
+            return result;
+        } else if (op.equals("isempty")) {
+            Value _v = getValue();
+            _Bool result = new _Bool();
+            if (_v instanceof _List) {
+                result.set(((_List) _v).value.size() == 0);
+            } else if (_v instanceof _Word) {
+                result.set(_v.getString().length() == 0 || _v.getString().equals("\""));
+            }
+            return result;
+        } else if (op.equals("int")) {
+            Value _v = getValue();
+            _Number result = new _Number();
+            result.set((float) Math.floor(_v.getFloat()));
+            return result;
+        } else if (op.equals("(")) {
             int count = 1;
             StringBuilder expr = new StringBuilder();
             String now;
-            while(scan.hasNext()){
+            while (scan.hasNext()) {
                 now = scan.next();
-                if(now.equals("(")){
-                    count ++;
+                if (now.equals("(")) {
+                    count++;
+                } else if (now.equals(")")) {
+                    count--;
                 }
-                else if(now.equals(")")){
-                    count --;
-                }
-                if(count == 0){
+                if (count == 0) {
                     break;
                 }
                 expr.append(now);
@@ -415,7 +452,7 @@ public class Interpreter {
             scan = new Scanner(expression);
 //            System.out.println(expression);
             StringBuilder real_expr_builder = new StringBuilder();
-            while(scan.hasNext()){
+            while (scan.hasNext()) {
                 String n = getValue().toString();
 //                System.out.println(n);
                 real_expr_builder.append(n);
@@ -428,11 +465,10 @@ public class Interpreter {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-        else{
-            try{
+        } else {
+            try {
                 return new _Number().set(Float.parseFloat(op));
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -446,11 +482,11 @@ public class Interpreter {
     }
 
 
-    private Value callFunc(String op){
+    private Value callFunc(String op) {
         Value return_val_backup = return_val;
         return_val = null;
         String func_list = dict.get(op).toString();
-        func_list = func_list.substring(1, func_list.length()-1);
+        func_list = func_list.substring(1, func_list.length() - 1);
 //        System.out.println(func_list);
 
         Scanner scan_backup = scan;
@@ -460,11 +496,11 @@ public class Interpreter {
         scan = scan_backup;
 
         HashMap<String, Value> dict_backup = dict;
-        dict = new HashMap<>();
+        dict = prepareDict();
 
         String arg_string = arg_list.toString();
-        Scanner arg_scan = new Scanner(arg_string.substring(1, arg_string.length()-1));
-        while(arg_scan.hasNext()){
+        Scanner arg_scan = new Scanner(arg_string.substring(1, arg_string.length() - 1));
+        while (arg_scan.hasNext()) {
             String arg = arg_scan.next();
             Value val = getValue();
 //            System.out.println("arg:");
@@ -493,39 +529,39 @@ public class Interpreter {
 //                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
 //        System.out.println(Prompt);
 
+        dict = prepareDict();
         while (LineScan.hasNext()) {
             System.out.print(PS1);
             String statement = LineScan.nextLine();
 //            System.out.println("input: " + statement);
-            if(!runStatement(statement)) break ;
+            if (!runStatement(statement)) break;
         }
     }
 
-    private boolean runStatement(String statement){
-        if(statement.isEmpty()){return true;}
+    private boolean runStatement(String statement) {
+        if (statement.isEmpty()) {
+            return true;
+        }
         statement = statement.replace("[", " [ ").replace("]", " ] ");
         statement = statement.replace("(", " ( ").replace(")", " ) ");
         scan = new Scanner(statement);
 //        System.out.println(statement.replace("[", " [ ").replace("]", " ] "));
 //        System.out.println(dict);
-        while(scan.hasNext()){
+        while (scan.hasNext()) {
 
             String op = scan.next();
 
             if (op.equals("exit")) {
                 System.out.println("Bye~");
                 return false;
-            }
-            if (op.equals("stop")) {
+            } else if (op.equals("stop")) {
 //                System.out.println("Bye~");
                 scan.nextLine();
                 return true;
-            }
-            if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
+            } else if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
                 scan.nextLine();
                 return true;
-            }
-            if (op.equals("print")) {
+            } else if (op.equals("print")) {
                 Value v = null;
                 try {
                     v = getValue();
@@ -540,16 +576,14 @@ public class Interpreter {
                     System.out.println(v);
                 }
 
-            }
-            if (op.equals("make")) {
+            } else if (op.equals("make")) {
                 String key = scan.next();
                 if (key.charAt(0) != '"') {
                     System.out.println("Illegal word.");
                 } else {
                     dict.put(key, getValue());
                 }
-            }
-            if (op.equals("erase")) {
+            } else if (op.equals("erase")) {
 
                 String key = scan.next();
                 if (key.charAt(0) != '"') {
@@ -566,28 +600,33 @@ public class Interpreter {
                         }
                     }
                 }
-            }
-            if (op.equals("run")){
+            } else if (op.equals("run")) {
                 return runStatement(getValue().toString());
-            }
-            else if(op.equals("output")){
+            } else if (op.equals("output")) {
                 return_val = getValue();
 //                System.out.println("getvalue: ");
 //                System.out.println(return_val);
-            }
-            if (op.equals("repeat")){
+            } else if (op.equals("repeat")) {
                 int times = getValue().getFloat().intValue();
                 Value stmt = getValue();
                 for (int i = 0; i < times; i++) {
                     runStatement(stmt.toString());
                 }
-            }
-            if(dict.containsKey("\""+op)){
-                callFunc("\""+op);
-            }
-            if(op.equals("printdict")){
+            } else if (op.equals("wait")) {
+                int t = getValue().getFloat().intValue();
+                try {
+                    Thread.sleep(t);
+                } catch (java.lang.InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("wait " + String.valueOf(t) + "s done");
 
+            } else if (dict.containsKey("\"" + op)) {
+                callFunc("\"" + op);
+            } else if (op.equals("poall")) {
                 System.out.println(dict.toString());
+            } else if (op.equals("erall")) {
+                dict = new HashMap<>();
             }
         }
         return true;
