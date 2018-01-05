@@ -747,7 +747,7 @@ public class Interpreter {
                 scan = scan_backup;
                 return true;
             } else if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
-                scan.nextLine();
+//                scan.nextLine();
                 scan = scan_backup;
                 return true;
             } else if (op.equals("print")) {
