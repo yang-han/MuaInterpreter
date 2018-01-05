@@ -3,8 +3,6 @@ package Interpreter;
 
 import java.util.*;
 
-import static java.lang.Thread.sleep;
-
 class MuaTypeException extends RuntimeException {
 
 }
@@ -27,6 +25,43 @@ class _Word extends Value {
     public _Word set(String v) {
         value = v;
         return this;
+    }
+
+    public _Word first() {
+        String _res;
+        if (value.substring(0, 1).equals("\"")) {
+            _res = value.substring(0, 2);
+        } else {
+            _res = value.substring(0, 1);
+        }
+        return new _Word().set(_res);
+    }
+
+    public _Word last() {
+        String _res;
+        if (value.substring(0, 1).equals("\"")) {
+            _res = "\"" + value.substring(value.length() - 1, value.length());
+        } else {
+            _res = value.substring(value.length() - 1, value.length());
+        }
+        return new _Word().set(_res);
+    }
+
+
+    public _Word butfirst() {
+        String _res;
+        if (value.substring(0, 1).equals("\"")) {
+            _res = "\"" + value.substring(2, value.length());
+        } else {
+            _res = value.substring(1, value.length());
+        }
+        return new _Word().set(_res);
+    }
+
+    public _Word butlast() {
+        String _res;
+        _res = value.substring(0, value.length() - 1);
+        return new _Word().set(_res);
     }
 
     public String getString() {
@@ -68,7 +103,6 @@ class _Number extends Value {
         throw new MuaTypeException();
     }
 
-
     @Override
     public String toString() {
         return String.valueOf(value);
@@ -80,6 +114,88 @@ class _List extends Value {
 
     public void append(Value v) {
         value.add(v);
+    }
+
+    public Value first() {
+        if (value.size() == 0) {
+            System.out.println("empty list~");
+        }
+        Value _v = value.get(0);
+        if (_v instanceof _Word) {
+            String _s = _v.getString();
+            _Word result = new _Word();
+            result.set(_s.split(" ")[0]);
+            return result;
+        } else {
+            return _v;
+        }
+    }
+
+    public Value last() {
+        if (value.size() == 0) {
+            System.out.println("empty list~");
+        }
+        Value _v = value.get(value.size() - 1);
+        if (_v instanceof _Word) {
+            String _s = _v.getString();
+            _Word result = new _Word();
+            String[] _words = _s.split(" ");
+            result.set(_words[_words.length - 1]);
+            return result;
+        } else {
+            return _v;
+        }
+    }
+
+    public Value butfirst() {
+        if (value.size() == 0) {
+            System.out.println("empty list~");
+        }
+        Value _v = value.get(0);
+        _List result = new _List();
+        if (_v instanceof _Word) {
+            String _s = _v.getString();
+            _Word _result = new _Word();
+            String[] _words = _s.split(" ");
+            StringBuilder _stringBuilder = new StringBuilder();
+            for (int i = 1; i < _words.length; ++i) {
+                _stringBuilder.append(_words[i]);
+            }
+            _result.set(_stringBuilder.toString());
+            result.append(_result);
+        }
+//        else {
+//            for (int i=1;i<value.size();++i) {
+//                result.append(value.get(i));
+//            }
+//        }
+        for (int i = 1; i < value.size(); ++i) {
+            result.append(value.get(i));
+        }
+        return result;
+    }
+
+    public Value butlast() {
+        if (value.size() == 0) {
+            System.out.println("empty list~");
+        }
+        Value _v = value.get(value.size() - 1);
+        _List result = new _List();
+        for (int i = 0; i < value.size() - 1; ++i) {
+            result.append(value.get(i));
+        }
+        if (_v instanceof _Word) {
+            String _s = _v.getString();
+            _Word _result = new _Word();
+            String[] _words = _s.split(" ");
+            StringBuilder _stringBuilder = new StringBuilder();
+            for (int i = 0; i < _words.length - 1; ++i) {
+                _stringBuilder.append(_words[i]);
+            }
+            _result.set(_stringBuilder.toString());
+            result.append(_result);
+        }
+        return result;
     }
 
     public String getString() throws MuaTypeException {
@@ -240,21 +356,18 @@ public class Interpreter {
             @Override
             public _Bool run() {
                 Value v1 = getValue();
+//                System.out.println("debug v1  "+v1.toString());
                 Value v2 = getValue();
+//                System.out.println("debug  "+v1+" "+v2);
                 if (v1 instanceof _Word && v2 instanceof _Word) {
                     int b = v1.getString().compareTo(v2.getString());
-                    if (b < 0) {
-                        return new _Bool().set(true);
-                    } else {
-                        return new _Bool().set(false);
-                    }
+//                    System.out.println(b<0);
+                    return new _Bool().set(b < 0);
+
                 } else if (v1 instanceof _Number && v2 instanceof _Number) {
                     int b = v1.getFloat().compareTo(v2.getFloat());
-                    if (b < 0) {
-                        return new _Bool().set(true);
-                    } else {
-                        return new _Bool().set(false);
-                    }
+//                    System.out.println(b<0);
+                    return new _Bool().set(b < 0);
                 }
 
                 return null;
@@ -291,10 +404,13 @@ public class Interpreter {
 
     }
 
-    private HashMap<String, Value> prepareDict() {
+    private HashMap<String, Value> prepareDict(HashMap<String, Value> last_dict) {
         HashMap<String, Value> _dict = new HashMap<>();
         _Number pi = new _Number();
         pi.set((float) 3.14159);
+        for (String key : last_dict.keySet()) {
+            _dict.put(key, last_dict.get(key));
+        }
         _dict.put("\"pi", pi);
         return _dict;
     }
@@ -345,8 +461,6 @@ public class Interpreter {
                 key = "\"" + op.substring(1, op.length());
             }
 
-//            System.out.println("now: ");
-//            System.out.println(dict);
             Value v = dict.get(key);
             if (v == null) {
                 System.out.println("No value bound with this word: " + key);
@@ -362,14 +476,7 @@ public class Interpreter {
             } else {
                 return new _Bool().set(dict.containsKey(key.substring(1, key.length())));
             }
-        }
-//        else if(op.equals("output")){
-//            return_val = getValue();
-//            System.out.println("getvalue: ");
-//            System.out.println(return_val);
-//        }
-        else if (dict.containsKey("\"" + op)) {
-//            System.out.println("here~~~~");
+        } else if (dict.containsKey("\"" + op)) {
             return callFunc("\"" + op);
         } else if (method.containsKey(op)) {
             return method.get(op).run();
@@ -419,6 +526,74 @@ public class Interpreter {
             _Number result = new _Number();
             result.set((float) Math.floor(_v.getFloat()));
             return result;
+        } else if (op.equals("first")) {
+            Value _v = getValue();
+            if (_v instanceof _List) {
+                return ((_List) _v).first();
+            } else if (_v instanceof _Word) {
+                return ((_Word) _v).first();
+            }
+        } else if (op.equals("last")) {
+            Value _v = getValue();
+            if (_v instanceof _List) {
+                return ((_List) _v).last();
+            } else if (_v instanceof _Word) {
+                return ((_Word) _v).last();
+            }
+        } else if (op.equals("butfirst")) {
+            Value _v = getValue();
+            if (_v instanceof _List) {
+                return ((_List) _v).butfirst();
+            } else if (_v instanceof _Word) {
+                return ((_Word) _v).butfirst();
+            }
+        } else if (op.equals("butlast")) {
+            Value _v = getValue();
+            if (_v instanceof _List) {
+                return ((_List) _v).butlast();
+            } else if (_v instanceof _Word) {
+                return ((_Word) _v).butlast();
+            }
+        } else if (op.equals("sentence")) {
+            Value _v1 = getValue();
+            Value _v2 = getValue();
+            _List _result = new _List();
+            if (_v1 instanceof _List) {
+                for (Value _v : ((_List) _v1).value) {
+                    _result.append(_v);
+                }
+            } else {
+                _result.append(_v1);
+            }
+            if (_v2 instanceof _List) {
+                for (Value _v : ((_List) _v2).value) {
+                    _result.append(_v);
+                }
+            } else {
+                _result.append(_v2);
+            }
+            return _result;
+        } else if (op.equals("list")) {
+            _List _result = new _List();
+            _result.append(getValue());
+            _result.append(getValue());
+            return _result;
+        } else if (op.equals("join")) {
+            _List _list = (_List) getValue();
+            Value _v = getValue();
+            _list.append(_v);
+            return _list;
+        } else if (op.equals("word")) {
+            _Word _word = (_Word) getValue();
+            Value _v = getValue();
+            _Word _result = new _Word();
+            if (_v instanceof _Word) {
+                _result.set(_word.toString() + _v.toString().substring(1));
+            } else {
+                _result.set(_word.toString() + _v.toString());
+            }
+            return _result;
+
         } else if (op.equals("(")) {
             int count = 1;
             StringBuilder expr = new StringBuilder();
@@ -450,7 +625,7 @@ public class Interpreter {
             expression = expression.replaceAll("\b(\\s+)-\\s+", "-");
             Scanner scan_backup = scan;
             scan = new Scanner(expression);
-//            System.out.println(expression);
+//            System.out.println("expression "+expression);
             StringBuilder real_expr_builder = new StringBuilder();
             while (scan.hasNext()) {
                 String n = getValue().toString();
@@ -493,22 +668,27 @@ public class Interpreter {
         scan = new Scanner(func_list);
         Value arg_list = getValue();
         Value operation_list = getValue();
+//        System.out.println("arg_list "+arg_list);
+//        System.out.println("operation_list "+operation_list);
         scan = scan_backup;
+//        System.out.println("scan_next: "+scan.next());
 
         HashMap<String, Value> dict_backup = dict;
-        dict = prepareDict();
+        dict = prepareDict(dict_backup);
 
         String arg_string = arg_list.toString();
         Scanner arg_scan = new Scanner(arg_string.substring(1, arg_string.length() - 1));
         while (arg_scan.hasNext()) {
-            String arg = arg_scan.next();
+            String arg = "\"" + arg_scan.next();
             Value val = getValue();
 //            System.out.println("arg:");
 //            System.out.println(arg);
 //            System.out.println(val);
             dict.put(arg, val);
         }
+        scan_backup = scan;
         runStatement(operation_list.toString());
+        scan = scan_backup;
 //        System.out.println("--------------=");
         dict = dict_backup;
         Value result = return_val;
@@ -516,6 +696,10 @@ public class Interpreter {
 //        System.out.println(result);
 //        System.out.println(return_val);
         return_val = return_val_backup;
+//        if(result != return_val){
+//            System.out.println("return    "+result.toString());
+//        }
+//        System.out.println("scan_next2: "+scan.next());
 
         return result;
     }
@@ -529,7 +713,7 @@ public class Interpreter {
 //                ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + "\n";
 //        System.out.println(Prompt);
 
-        dict = prepareDict();
+        dict = prepareDict(new HashMap<>());
         while (LineScan.hasNext()) {
             System.out.print(PS1);
             String statement = LineScan.nextLine();
@@ -542,14 +726,17 @@ public class Interpreter {
         if (statement.isEmpty()) {
             return true;
         }
+        Scanner scan_backup = scan;
         statement = statement.replace("[", " [ ").replace("]", " ] ");
         statement = statement.replace("(", " ( ").replace(")", " ) ");
         scan = new Scanner(statement);
 //        System.out.println(statement.replace("[", " [ ").replace("]", " ] "));
 //        System.out.println(dict);
+//        System.out.println("Statement:  "+statement);
         while (scan.hasNext()) {
 
             String op = scan.next();
+//            System.out.println("op "+op);
 
             if (op.equals("exit")) {
                 System.out.println("Bye~");
@@ -557,9 +744,11 @@ public class Interpreter {
             } else if (op.equals("stop")) {
 //                System.out.println("Bye~");
                 scan.nextLine();
+                scan = scan_backup;
                 return true;
             } else if (op.length() >= 2 && op.substring(0, 2).equals("//")) {
                 scan.nextLine();
+                scan = scan_backup;
                 return true;
             } else if (op.equals("print")) {
                 Value v = null;
@@ -601,6 +790,7 @@ public class Interpreter {
                     }
                 }
             } else if (op.equals("run")) {
+                scan = scan_backup;
                 return runStatement(getValue().toString());
             } else if (op.equals("output")) {
                 return_val = getValue();
@@ -619,7 +809,7 @@ public class Interpreter {
                 } catch (java.lang.InterruptedException e) {
                     e.printStackTrace();
                 }
-                System.out.println("wait " + String.valueOf(t) + "s done");
+                System.out.println("wait " + String.valueOf(t) + "ms done");
 
             } else if (dict.containsKey("\"" + op)) {
                 callFunc("\"" + op);
@@ -627,8 +817,19 @@ public class Interpreter {
                 System.out.println(dict.toString());
             } else if (op.equals("erall")) {
                 dict = new HashMap<>();
+            } else if (op.equals("if")) {
+                boolean _check = getValue().getBoolean();
+                _List _list1 = (_List) getValue();
+                _List _list2 = (_List) getValue();
+//                System.out.println("if if if"+_list1.toString() +"else else else"+_list2.toString());
+                if (_check) {
+                    runStatement(_list1.toString());
+                } else {
+                    runStatement(_list2.toString());
+                }
             }
         }
+        scan = scan_backup;
         return true;
     }
 
