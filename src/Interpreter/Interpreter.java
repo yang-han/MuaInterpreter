@@ -1,13 +1,14 @@
 package Interpreter;
 
 
+import java.io.*;
 import java.util.*;
 
 class MuaTypeException extends RuntimeException {
 
 }
 
-abstract class Value {
+abstract class Value implements Serializable{
 
     @Override
     abstract public String toString();
@@ -483,10 +484,10 @@ public class Interpreter {
         } else if (cal_op.contains(op)) {
             return new _Word().set(op);
         } else if (op.equals("random")) {
-            int times = getValue().getFloat().intValue();
+            int bound = getValue().getFloat().intValue();
             _Number result = new _Number();
-            result.set(random.nextInt(times));
-
+            result.set(random.nextInt(bound));
+            return result;
         } else if (op.equals("sqrt")) {
             float num = getValue().getFloat();
             _Number result = new _Number();
@@ -594,7 +595,8 @@ public class Interpreter {
             }
             return _result;
 
-        } else if (op.equals("(")) {
+        }
+        else if (op.equals("(")) {
             int count = 1;
             StringBuilder expr = new StringBuilder();
             String now;
@@ -817,7 +819,34 @@ public class Interpreter {
                 System.out.println(dict.toString());
             } else if (op.equals("erall")) {
                 dict = new HashMap<>();
-            } else if (op.equals("if")) {
+            }
+            else if(op.equals("save")){
+                try{
+                    System.out.println("Saving...");
+                    String fileName = scan.next();
+                    FileOutputStream os = new FileOutputStream(fileName);
+                    ObjectOutputStream out = new ObjectOutputStream(os);
+                    out.writeObject(dict);
+                    System.out.println("save to "+fileName+" successfully!");
+                    out.close();
+                    os.close();
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+            }else if(op.equals("load")){
+                try{
+                    String fileName = scan.next();
+                    FileInputStream is = new FileInputStream(fileName);
+                    ObjectInputStream in = new ObjectInputStream(is);
+                    HashMap<String, Value> t_dict =  (HashMap<String, Value>) in.readObject();
+                    dict.putAll(t_dict);
+                    System.out.println("load "+fileName+" successfully!");
+                    System.out.println(dict);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+            else if (op.equals("if")) {
                 boolean _check = getValue().getBoolean();
                 _List _list1 = (_List) getValue();
                 _List _list2 = (_List) getValue();

@@ -40,7 +40,11 @@ print :q
 make "x 98
 print (thing "x + 10 *(1-:x))
 
-print random 2*2
+print random 4
+print int 1.2
+
+print sqrt 5
+
 
 print isbool islist [make "asdas 12]
 
@@ -50,6 +54,10 @@ print isempty []
 wait 1000
 
 poall
+
+save a.txt
+
+load a.txt
 
 if true [print :pi] [print 1]
 if isword "a [print :pi] [print 1]
@@ -103,8 +111,10 @@ print word :x true
 
 
 // 记录下更好的实践：
-所有内置操作实现为函数，存储在命名空间中
-（当前是有返回值的语句和有返回值的操作分开处理）
-函数可以有返回值，也可以返回null
+// 所有内置操作实现为函数，存储在命名空间中
+//（当前是有返回值的语句和有返回值的操作分开处理）
+// 函数可以有返回值，也可以返回null
 
-重构_List 和 _Word
+// 重构_List 和 _Word
+
+// 函数单一出口
